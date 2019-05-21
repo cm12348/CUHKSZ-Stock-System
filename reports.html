@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <!--
+	  <title>STOCK-SYS</title>
+    <h1>STOCK-SYS</h1>
+-->
+  <script src="js/jquery-2.2.3.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+  <script src="http://code.highcharts.com/highcharts.js"></script>
+  <script src="assets/js/highstock.js"></script>
+  <script src="assets/js/exporting.js"></script>
+  <script src="assets/js/export-data.js"></script>
+  <script src="assets/js/mychart.js"></script>
+</head>
+<title>Material Design HTML Template-SHARED ON BOOTSTRAPMB.COM</title>
+<base href="">
+<!-- load Google fonts -->
+<link
+  href="https://fonts.googleapis.com/icon?family=Material+Icons%7CPlayfair+Display:400,400i,700%7CRoboto+Condensed:400,700"
+  rel="stylesheet">
+<!-- Crypto Styles -->
+<link id="crypto-stylesheet" rel="stylesheet" href="assets/css/night-gold-orange.css">
+<!-- page specific CSS -->
+
+</head>
+
+<body class="mdc-typography pace-on mdc-theme--background crypro-theme-gradient" onload="check_user()">
+  <script>
+    var username = "";
+    var username = "";
+    var stock_list = [];
+    var preferlist = [];
+    var ws;
+    var series = new Array();
+    var chart;
+
+    ws = new WebSocket("ws://localhost:9999");
+
+    function check_user() {
+      username = window.location.href.split("=")[1];
+      if (username == "") {
+        document.getElementById("current_user").innerHTML = "Not logged in";
+      } else {
+        document.getElementById("current_user").innerHTML = "User: " + username;
+      }
+      setTimeout(get_all_stock(), 500);
+
+      console.log("username: ", username);
+    }
+
+    function load_stock_table() {
+      console.log("load_stock_table() called");
+      var stock_table = document.getElementById("stock_table");
+
+      for (var i = 0; i < stock_list.length; i++) {
+        var row = stock_table.insertRow(i);
+        var cell0 = row.insertCell(0);
+        var cell1 = row.insertCell(1);
+        var cell2 = row.insertCell(2);
+        var cell3 = row.insertCell(3);
+        cell0.className = "mdl-data-table__cell--icon";
+        cell0.innerHTML = "*";
+
+        cell1.className = "mdl-data-table__cell--non-numeric";
+        cell1.innerHTML = stock_list[i];
+
+        cell2.className = "mdl-data-table__cell--non-numeric crypto-transactions-list__status crypto-transactions-list__status--pending";
+        cell2.innerHTML = "Add";
+        cell2.setAttribute("onclick", "add_favorite(".concat(String(i), ")"));
+        cell2.setAttribute("style", "cursor:pointer");
+
+        cell3.className = "crypto-transactions-list__item-toggle";
+        cell3.innerHTML = "SHOW";
+        var func = "return ".concat("get_points(", String(i), ")");
+        cell3.setAttribute("onclick", func);
+        cell3.setAttribute("style", "cursor:pointer");
+      }
+    }
+    function add_favorite(stock_num) {
+      if (username != "") {
+        var msg = "7".concat("--", username, "--", stock_list[stock_num]);
+        console.log(msg, " sent.")
+        ws.send(msg);
+
+        ws.onmessage = function (evt) {
+          var received_msg = evt.data;
+          if (received_msg == "True") {
+            alert("Added to My Stocks")
+            window.location.reload();
+          }
+        }
+      } else {
+        alert("Please log in first!")
+      }
+    }
+
+    function to(arg) {
+      //go to the indicated page
+      //send user name when loging out
+      if (arg == "login.html" && username != "") {
+        var msg = "8".concat("--", username);
+        console.log("msg: ", msg);
+        ws.send(msg);
+        console.log(msg, " sent.")
+        ws.onmessage = function (evt) {
+          console.log("recieved data: ", evt.data)
+          if (evt.data == "True") {
+            //log out successfully
+            window.location.href = arg;
+
+          } else {
+            alert("Something wrong when logging out!")
+            return false;
+          }
+        }
+      } else {
+        window.location.href = "".concat(arg, "?user=", username);
+      }
+    }
+
+    function get_all_stock() {
+
+      msg = "a".concat("--");
+
+      console.log("msg:", msg);
+
+      ws.onopen = function () {
+        ws.send(msg);
+        console.log(msg, " sent.")
+      }
+
+      ws.onmessage = function (evt) {
+        var received_msg = evt.data;
+        //data is a list!!
+        //you need to decode
+        console.log("数据已接收...", received_msg);
+        if (received_msg != null) {
+          stock_list = received_msg.replace("[", "").replace("]", "").split(',');
+          console.log(stock_list);
+
+          load_stock_table();
+          if (username != "") {
+            get_preferlist();
+          }
+        }
+      }
+
+      ws.onclose = function () {
+        // 关闭 websocket
+        alert("Websocket has been closed.");
+      };
+
+    }
+    function get_preferlist() {
+
+      msg = "6".concat("--", username);
+
+      console.log("msg:", msg);
+
+      ws.send(msg);
+
+      ws.onmessage = function (evt) {
+        var received_msg = evt.data;
+        //data is a list!!
+        //you need to decode
+        console.log("数据已接收...", received_msg);
+        if (received_msg != null) {
+          preferlist = received_msg.replace("[", "").replace("]", "").split(',');
+          console.log(preferlist);
+          document.getElementById("corner_mark").innerHTML = preferlist.length;
+
+        }
+      }
+
+      // ws.onclose = function () {
+      //   // 关闭 websocket
+      //   alert("Websocket has been closed.");
+      // };
+    }
+
+  </script>
+  <script language="JavaScript">
+
+    function getLocalTime(nS) {
+      return new Date(parseInt(nS) * 1000).toLocaleString().replace(/:\d{1,2}$/, ' ');
+    }
+    // alert(getLocalTime(1293072805));
+
+    function convertDateFromString(dateString) {
+      if (dateString) {
+        var arr1 = dateString.split("-");
+        var date = new Date(arr1[0], arr1[1], arr1[2], arr1[3], arr1[4], arr1[5]).getTime();
+        console.log(getLocalTime(date));
+        return date;
+      }
+    }
+
+    function get_point(stock_num) {
+
+      var stock = stock_list[stock_num];
+      var point = new Array(2);
+
+      point[0] = Date.parse(new Date()) - 2 * 1000;
+      // var str = point[0].getTime().Format("yyyy-M-d-hh-mm-ss");
+      console.log(point[0]);
+      var str = String(point[0]);
+      var msg = "4".concat("--", str.slice(0, str.length - 3), "--", stock);
+      ws.send(msg);
+      console.log(msg, " sent.")
+      ws.onmessage = function (evt) {
+        // console.log(chart.series[0]["data"][-1]);
+        // point[0] = chart.series[0]["data"][-1][0] + 1000;
+        point[0] = new Date().getTime() - 2 * 1000;// + 2678402 * 1000;
+        var received_msg = evt.data;
+        console.log(received_msg, " recieved.");
+        point[1] = parseFloat(received_msg);
+
+        chart.series[0].addPoint(point, true, false, true);
+        console.log(point, "added");
+        // chart.redraw();
+        return point;
+      }
+
+    }
+
+
+
+    function get_points(n) {
+      series = [{
+        name: stock_list[n],
+        data: []
+      }]
+      var stock = stock_list[n];
+      console.log("stock", stock);
+      var points = new Array();
+      var msg = "3".concat("--", stock);
+
+      ws.send(msg);
+      console.log(msg, " sent.")
+      var index = 0;
+      ws.onmessage = function (evt) {
+        var received_msg = evt.data;
+        // console.log(received_msg, " recieved.");
+        var tmp = received_msg.replace("[", "").replace("]", "").split(",");
+        for (var i = 0; i < tmp.length; i++) {
+          series[0]["data"][i] = new Array(2);
+          console.log(tmp[i].split(':', 2)[0]);
+          // series[0]["data"][i][0] = convertDateFromString(tmp[i].split(':', 2)[0]);
+          series[0]["data"][i][0] = parseInt(tmp[i].split(':', 2)[0]) * 1000;
+          series[0]["data"][i][1] = parseFloat(tmp[i].split(':', 2)[1]);
+          console.log(tmp[i].split(':', 2)[0]);
+          console.log("x: ", series[0]["data"][i][0], "y: ", series[0]["data"][i][1]);
+
+          if (i == tmp.length - 1) {
+            console.log("stock_name:", stock_list[n], "Points.length: ", series[0]["data"].length);
+            show(n);
+          } else {
+            continue;
+          }
+        }
+      }
+    }
+    let timer = 0;
+    function show(stock_num) {
+      add_chart();
+      clearInterval(timer);
+      while (chart.series.length > 0) {
+        chart.series[0].remove(true);
+      }
+      chart.addSeries(series[0]);
+      chart.update({
+        title: {
+          text: stock_list[stock_num]
+        }
+      });
+      chart.title["text"] = stock_list[stock_num];
+      console.log(chart);
+
+      timer = setInterval(function () {
+        get_point(stock_num);
+      }, 1000)
+    }
+
+  </script>
+
+  <div class="crypto-loader"></div>
+
+
+  <div class="crypto-wrapper">
+
+    <div class="crypto-sidenav">
+      <nav class="crypto-navigation">
+        <ul class="crypto-navigation__list">
+
+          <li class="crypto-navigation__list-item mdc-ripple-surface "> </li>
+
+          <li class="crypto-navigation__list-item mdc-ripple-surface ">
+            <a onclick="return to('wallet.html')" style="cursor:pointer">
+              <i class="material-icons crypto-navigation__list-item__icon" aria-hidden="true">account_balance_wallet</i>
+
+              <span id="corner_mark" class="crypto-navigation__list-item__badge"></span>
+
+              <span class="crypto-navigation__list-item__label mdc-theme--on-surface mdc-typography--overline">
+                MY STOCK
+              </span>
+            </a>
+          </li>
+          <li class="crypto-navigation__list-item mdc-ripple-surface crypto-navigation__list-item--active">
+            <a onclick="return to('reports.html')" style="cursor:pointer"> <em
+                class="material-icons crypto-navigation__list-item__icon" aria-hidden="true">bar_chart</em> <span
+                class="crypto-navigation__list-item__label mdc-theme--on-surface mdc-typography--overline"> All stocks
+              </span></a></li>
+          <li class="crypto-navigation__list-item mdc-ripple-surface "> </li>
+
+          <li class="crypto-navigation__list-item mdc-ripple-surface "> </li>
+
+          <li class="crypto-navigation__list-item mdc-ripple-surface ">
+            <a href="login.html">
+              <i class="material-icons crypto-navigation__list-item__icon" aria-hidden="true">power_settings_new</i>
+
+              <span class="crypto-navigation__list-item__label mdc-theme--on-surface mdc-typography--overline">
+                Logout
+              </span>
+            </a>
+          </li>
+
+        </ul>
+      </nav>
+
+
+    </div>
+
+    <main class="crypto-main">
+
+      <div class="crypto-main__content mdc-theme--text-primary-on-background">
+
+        <!-- start of ticker -->
+        <div class="crypto-marquee__wrapper">
+          <div class="crypto-marquee marquee3k" data-speed="0.40" data-pausable="true"> </div>
+        </div>
+        <!-- end of ticker -->
+        <div class="mdc-layout-grid">
+          <div class="mdc-layout-grid__inner">
+            <div
+              class="mdc-layout-grid__cell--span-3-desktop mdc-layout-grid__cell--span-8-tablet mdc-layout-grid__cell--span-4-phone">
+              <div class="crypto-widget">
+                <h2 class="crypto-widget__heading mdc-typography--overline mdc-theme--primary"></h2>
+                <h2 class="crypto-widget__heading mdc-typography--overline mdc-theme--primary"><span
+                    class="crypto-widget__heading-text">stocks</span>
+                  <span id="current_user" class="crypto-widget__heading-border"></span>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+        <div class="crypto-widget__content crypto-overflow-x-auto">
+          <table class="mdl-data-table mdc-typography--overline">
+            <thead class="crypto-transactions-list__labels">
+              <tr>
+                <th></th>
+                <th class="mdl-data-table__cell--non-numeric"> Name</th>
+                <th class="mdl-data-table__cell--non-numeric">ADD to favorite</th>
+                <th class="mdl-data-table__cell--non-numeric"></th>
+              </tr>
+            </thead>
+            <tbody id="stock_table">
+              <!-- <tr class="crypto-transactions-list__item">
+                <td class="mdl-data-table__cell--icon"><i class="fab fa-bitcoin"></i></td>
+                <td class="mdl-data-table__cell--non-numeric">A</td>
+                <td
+                  class="mdl-data-table__cell--non-numeric crypto-transactions-list__status crypto-transactions-list__status--pending">
+                  Add</td>
+                <td><a href="A.html" class="crypto-transactions-list__item-toggle"><i
+                      class="material-icons">chevron_right</i></a></td>
+              </tr> -->
+
+            </tbody>
+            <tbody class="crypto-transactions-list__separator">
+              <tr>
+                <td colspan="7"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="container" style="margin: 100px"></div>
+    </main>
+
+  </div>
+
+  <div class="crypto-menu-switches">
+    <div class="crypto-menu-switches--handle">
+      <i class="material-icons">settings</i>
+    </div>
+    <!-- RTL switch -->
+    <div class="switch-wrapper mdc-theme--on-primary">
+      <div class="mdc-switch crypto-rtl-switch-selector">
+        <div class="mdc-switch__track"></div>
+        <div class="mdc-switch__thumb-underlay">
+          <div class="mdc-switch__thumb">
+            <input type="checkbox" id="rtl-switch" class="mdc-switch__native-control" role="switch"
+              aria-checked="false">
+          </div>
+        </div>
+      </div>
+      <label for="rtl-switch">RTL</label>
+    </div>
+    <!-- theme switch -->
+    <div class="switch-wrapper mdc-theme--on-primary">
+      <div class="mdc-switch crypto-theme-switch-selector">
+        <div class="mdc-switch__track"></div>
+        <div class="mdc-switch__thumb-underlay">
+          <div class="mdc-switch__thumb">
+            <input type="checkbox" id="crypto-theme-switch" class="mdc-switch__native-control" role="switch"
+              aria-checked="false">
+          </div>
+        </div>
+      </div>
+      <label for="crypto-theme-switch">Switch theme</label>
+    </div>
+  </div>
+
+
+  <!-- initialise material components js -->
+  <script src="assets/js/material-components-web.min.js"></script>
+  <script>mdc.autoInit()</script>
+  <!-- initialise marquee js -->
+  <script src="assets/js/marquee3k.js"></script>
+  <script>Marquee3k.init()</script>
+  <!-- layout js -->
+  <script data-pace-options='{ "ajax": false, "restartOnRequestAfter": false }' src="assets/js/pace.min.js"></script>
+  <script src="assets/js/apexcharts.min.js"></script>
+  <!-- switcher js -->
+  <script src="assets/js/partials/switcher.js"></script>
+  <!-- page specific JS -->
+
+  <script src="assets/js/pages/reports.js"></script>
+
+
+</body>
+
+</html>

@@ -13,6 +13,7 @@
     rel="stylesheet">
   <!-- Crypto Styles -->
   <link id="crypto-stylesheet" rel="stylesheet" href="assets/css/night-gold-orange.css">
+  <script src="config.js"></script>
   <!-- page specific CSS -->
 
 </head>
@@ -33,7 +34,7 @@
         console.log("msg: ", msg);
       }
 
-      var ws = new WebSocket("ws://localhost:9999");
+      var ws = new WebSocket("ws://".concat(wsURL));
 
       ws.onopen = function () {
         ws.send(msg);

@@ -17,6 +17,7 @@
   <script src="assets/js/exporting.js"></script>
   <script src="assets/js/export-data.js"></script>
   <script src="assets/js/mychart.js"></script>
+  <script src="config.js"></script>
 </head>
 <title>Stock System</title>
 <base href="">
@@ -40,7 +41,7 @@
     var series = new Array();
     var chart;
 
-    ws = new WebSocket("ws://localhost:9999");
+    ws = new WebSocket("ws://".concat(wsURL));
 
     function check_user() {
       // get_all_stock();
